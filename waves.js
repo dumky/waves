@@ -18,10 +18,88 @@ source signal
 */
 
 
+var antennas = [ {x:0, y:0}, {x:0, y:10}, {x:10, y:0}, {x:10, y:10} ];
 
+var devices = [ { x:1, y:4} ];
 
+var sourceSignal = sineSignal(100, 50, 0, 400);
 
+var plot = computeReceivedSignal(devices[0], sourceSignal, antennas);
 
+function computeReceivedSignal(device, sourceSignal, antennas) {
+	var receivedSignals = [];
+	for (var i = 0; i < antennas.length; i++) {
+		var emitted = emittedSignal(sourceSignal, antennas[i], device);
+		console.debug(emitted);
+		var received = receivedSignal(emitted, antennas[i], device);
+		receivedSignals.push(received);
+	}
+	//console.debug(receivedSignals);
+	return totalReceivedSignal(receivedSignals);
+}
+
+function emittedSignal(sourceSignal, antenna, device) {
+	var lat = latency(antenna, device);
+	var maxLatency = 15;
+	
+
+	
+	if (lat > maxLatency) {
+		// TODO
+		throw "TODO";
+		return;
+	}
+
+	var compensatingDelay = Math.round(maxLatency - lat);
+	var output = [];
+	
+	for (var t = 0; t < compensatingDelay; t++) {
+		output.push(0);
+	}
+	for (var t = 0; t < sourceSignal.length; t++) {
+		output.push(sourceSignal[t]);
+	}
+	return output;
+}
+
+function receivedSignal(emittedSignal, antenna, device) {
+	var lat = Math.round(latency(antenna, device));
+	return emittedSignal.slice(lat, emittedSignal.length);
+}
+
+function totalReceivedSignal(signals) {
+	var max = maxLength(signals);
+	
+	var output = [];
+	for (var t = 0; t < max; t++) {	
+		output.push(sum(signals, t));
+	}
+	
+	return output;
+}
+
+function maxLength(arrays) {
+	if (arrays.length == 1) {
+		return arrays[0].length;
+	}
+	
+	var rest = arrays.slice(1, arrays.length);
+	return Math.max(arrays[0].length, maxLength(rest));
+}
+
+function sum(signals, t) {
+	var total = 0;
+	for (i=0; i < signals.length; i++) {
+		if (signals[i].length > t) {
+			total += signals[i][t];
+		}
+	}
+	return total;
+}
+
+function latency(pos1, pos2) {
+	return Math.sqrt(Math.pow(pos1.x - pos2.x, 2) + Math.pow(pos1.y - pos2.y, 2));
+}
 
 function sineSignal(intensity, period, delay, numSteps) {
 	var output = [];
@@ -39,11 +117,11 @@ function labels(numSteps) {
 	return output;
 }
 
-var sine = sineSignal(100, 50, 0, 100);
+
 
 
 var data = {
-    labels: labels(100),
+    labels: labels(400),
     datasets: [
         {
             label: "My First dataset",
@@ -53,7 +131,7 @@ var data = {
             pointStrokeColor: "#fff",
             pointHighlightFill: "#fff",
             pointHighlightStroke: "rgba(220,220,220,1)",
-            data: sine
+            data: plot
         },
 
     ]
