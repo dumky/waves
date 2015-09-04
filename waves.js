@@ -20,9 +20,11 @@ source signal
 
 var antennas = [ {x:0, y:0}, {x:0, y:10}, {x:10, y:0}, {x:10, y:10} ];
 
-var devices = [ { x:1, y:4} ];
+var devices = [ { x:0, y:0} ];
 
-var sourceSignal = sineSignal(100, 50, 0, 400);
+var sourceSignal = sineSignal(100, 50, 0, 100);
+//var sourceSignal = squareSignal();
+//draw(sourceSignal);
 
 var plot = computeReceivedSignal(devices[0], sourceSignal, antennas);
 
@@ -30,12 +32,18 @@ function computeReceivedSignal(device, sourceSignal, antennas) {
 	var receivedSignals = [];
 	for (var i = 0; i < antennas.length; i++) {
 		var emitted = emittedSignal(sourceSignal, antennas[i], device);
-		console.debug(emitted);
+		//console.debug(emitted);
+		//if (i==1) { draw(emitted); }
+		
 		var received = receivedSignal(emitted, antennas[i], device);
+		//if (i==1) { draw(received); }
+		
 		receivedSignals.push(received);
 	}
 	//console.debug(receivedSignals);
-	return totalReceivedSignal(receivedSignals);
+    var total =  totalReceivedSignal(receivedSignals);
+    draw(total);
+    return total;
 }
 
 function emittedSignal(sourceSignal, antenna, device) {
@@ -64,7 +72,15 @@ function emittedSignal(sourceSignal, antenna, device) {
 
 function receivedSignal(emittedSignal, antenna, device) {
 	var lat = Math.round(latency(antenna, device));
-	return emittedSignal.slice(lat, emittedSignal.length);
+		var output = [];
+	
+	for (var t = 0; t < lat; t++) {
+		output.push(0);
+	}
+		for (var t = 0; t < emittedSignal.length; t++) {
+		output.push(emittedSignal[t]);
+	}
+	return output;
 }
 
 function totalReceivedSignal(signals) {
@@ -109,6 +125,11 @@ function sineSignal(intensity, period, delay, numSteps) {
 	return output;
 }
 
+function squareSignal() {
+  var output= [ 100, 100, 100, 0, 0, 0, 100, 100, 100];
+  return output;
+}
+
 function labels(numSteps) {
 	var output = [];
 	for (var t = 0; t < numSteps; t++) {
@@ -118,29 +139,28 @@ function labels(numSteps) {
 }
 
 
+function draw(plot) {
 
+  var data = {
+      labels: labels(plot.length),
+      datasets: [
+          {
+              label: "My First dataset",
+              fillColor: "rgba(220,220,220,0.2)",
+              strokeColor: "rgba(220,220,220,1)",
+              pointColor: "rgba(220,220,220,1)",
+              pointStrokeColor: "#fff",
+              pointHighlightFill: "#fff",
+              pointHighlightStroke: "rgba(220,220,220,1)",
+              data: plot
+          },
+      ]
+  };
 
-var data = {
-    labels: labels(400),
-    datasets: [
-        {
-            label: "My First dataset",
-            fillColor: "rgba(220,220,220,0.2)",
-            strokeColor: "rgba(220,220,220,1)",
-            pointColor: "rgba(220,220,220,1)",
-            pointStrokeColor: "#fff",
-            pointHighlightFill: "#fff",
-            pointHighlightStroke: "rgba(220,220,220,1)",
-            data: plot
-        },
+  Chart.defaults.global.showTooltips = false;
 
-    ]
-};
+  var options = {};
 
-Chart.defaults.global.showTooltips = false;
-
-var options = {};
-
-var ctx = document.getElementById("myChart").getContext("2d");
-var myLineChart = new Chart(ctx).Line(data, options);
-
+  var ctx = document.getElementById("myChart").getContext("2d");
+  var myLineChart = new Chart(ctx).Line(data, options);
+}
