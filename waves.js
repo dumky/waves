@@ -18,39 +18,65 @@ source signal
 */
 
 
-var antennas = [ {x:0, y:0}, {x:0, y:10}, {x:10, y:0}, {x:10, y:10} ];
+var antennas = [ {x:0, y:0}, {x:0, y:20}, {x:30, y:70}, {x:100, y:100}, {x:60, y:21}, {x:37, y:1}, {x:0, y:43},   ];
 
-var devices = [ { x:0, y:0} ];
+var devices = 
+//[ { x:1, y:0} ];
+[ { x:1, y:0}, {x:5, y:6} ];
 
-var sourceSignal = sineSignal(100, 50, 0, 100);
-//var sourceSignal = squareSignal();
+var sourceSignals = 
+//[ sineSignal(100, 50, 0, 100) ];
+//[ sineSignal(100, 50, 0, 100), squareSignal() ];
+[ sineSignal(100, 10, 0, 100), zeroSignal() ];
 //draw(sourceSignal);
 
-var plot = computeReceivedSignal(devices[0], sourceSignal, antennas);
 
-function computeReceivedSignal(device, sourceSignal, antennas) {
+var plot = computeReceivedSignal(devices, sourceSignals, antennas);
+
+function computeReceivedSignal(devices, sourceSignals, antennas) {
+	var emittedSignals = []
 	var receivedSignals = [];
-	for (var i = 0; i < antennas.length; i++) {
-		var emitted = emittedSignal(sourceSignal, antennas[i], device);
-		//console.debug(emitted);
-		//if (i==1) { draw(emitted); }
-		
-		var received = receivedSignal(emitted, antennas[i], device);
-		//if (i==1) { draw(received); }
-		
-		receivedSignals.push(received);
+	
+	for (var j = 0; j < sourceSignals.length; j++) {
+    for (var i = 0; i < antennas.length; i++) {
+      var emitted = emittedSignal(sourceSignals[j], antennas[i], devices[j]);
+      //console.debug(emitted);
+      //if (i==1) { draw(emitted); }
+      
+      if (!emittedSignals[i]) { emittedSignals[i] = []; }
+      emittedSignals[i][j] = emitted;
+    }
 	}
+	
+	var totalEmittedSignals = [];
+	for (var i = 0; i < antennas.length; i++) {
+	  totalEmittedSignals.push(sumSignals(emittedSignals[i]));
+	}
+	
+	for (var i = 0; i < antennas.length; i++) {
+	for (var k = 0; k < devices.length; k++) {
+      var received = receivedSignal(totalEmittedSignals[i], antennas[i], devices[k]);
+      //if (i==0) { draw(received); }
+      
+      if (!receivedSignals[k]) { receivedSignals[k] = []; }
+      receivedSignals[k][i] = received;
+      //if (k== 0 && i==0) { draw(receivedSignals[j][i]); }
+	 }
+	}
+	
 	//console.debug(receivedSignals);
-    var total =  totalReceivedSignal(receivedSignals);
-    draw(total);
-    return total;
+	 var output = [];
+	 for (var k = 0; k < devices.length; k++) {
+    var total =  sumSignals(receivedSignals[k]);
+    output.push(total);
+    if (k == 1) { draw(total); }
+   }
+    return output;
 }
 
 function emittedSignal(sourceSignal, antenna, device) {
 	var lat = latency(antenna, device);
-	var maxLatency = 15;
-	
-
+	var maxLatency = 150;
 	
 	if (lat > maxLatency) {
 		// TODO
@@ -83,7 +109,7 @@ function receivedSignal(emittedSignal, antenna, device) {
 	return output;
 }
 
-function totalReceivedSignal(signals) {
+function sumSignals(signals) {
 	var max = maxLength(signals);
 	
 	var output = [];
@@ -128,6 +154,10 @@ function sineSignal(intensity, period, delay, numSteps) {
 function squareSignal() {
   var output= [ 100, 100, 100, 0, 0, 0, 100, 100, 100];
   return output;
+}
+
+function zeroSignal() {
+  return [0, 0, 0, 0, 0];
 }
 
 function labels(numSteps) {
